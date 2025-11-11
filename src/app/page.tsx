@@ -27,83 +27,61 @@ export default function Home() {
   const { address, isConnected } = useAccount();
 
   const [qty, setQty] = useState<number>(1);
-  const [mounted, setMounted] = useState(false); // ✅ يمنع اختلاف SSR/CSR
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Farcaster Mini App: Ready call
+  // Farcaster Ready
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     const sameOrigin = !appUrl || window.location.origin === appUrl;
-    if (sameOrigin) {
-      sdk.actions.ready().catch(console.error);
-    }
+    if (sameOrigin) sdk.actions.ready().catch(console.error);
   }, []);
 
   const canRead = mounted && isConnected && chainId === CHAIN_ID;
 
-  // === Reads (لا تُفعّل قبل mount) ===
+  // Reads
   const { data: remaining } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: COLLECTION_ABI,
-    functionName: 'remaining',
+    address: CONTRACT_ADDRESS, abi: COLLECTION_ABI, functionName: 'remaining',
     query: { enabled: !!canRead },
   });
   const { data: totalSupply } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: COLLECTION_ABI,
-    functionName: 'totalSupply',
+    address: CONTRACT_ADDRESS, abi: COLLECTION_ABI, functionName: 'totalSupply',
     query: { enabled: !!canRead },
   });
   const { data: maxSupply } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: COLLECTION_ABI,
-    functionName: 'maxSupply',
+    address: CONTRACT_ADDRESS, abi: COLLECTION_ABI, functionName: 'maxSupply',
     query: { enabled: !!canRead },
   });
   const { data: priceUSDC } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: COLLECTION_ABI,
-    functionName: 'priceUSDC',
+    address: CONTRACT_ADDRESS, abi: COLLECTION_ABI, functionName: 'priceUSDC',
     query: { enabled: !!canRead },
   });
   const { data: saleActive } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: COLLECTION_ABI,
-    functionName: 'saleActive',
+    address: CONTRACT_ADDRESS, abi: COLLECTION_ABI, functionName: 'saleActive',
     query: { enabled: !!canRead },
   });
   const { data: maxPerWallet } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: COLLECTION_ABI,
-    functionName: 'maxPerWallet',
+    address: CONTRACT_ADDRESS, abi: COLLECTION_ABI, functionName: 'maxPerWallet',
     query: { enabled: !!canRead },
   });
   const { data: mintedOfMe } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: COLLECTION_ABI,
-    functionName: 'mintedOf',
+    address: CONTRACT_ADDRESS, abi: COLLECTION_ABI, functionName: 'mintedOf',
     args: [address ?? '0x0000000000000000000000000000000000000000'],
     query: { enabled: !!canRead && !!address },
   });
   const { data: allowance } = useReadContract({
-    address: USDC_ADDRESS,
-    abi: ERC20_ABI,
-    functionName: 'allowance',
+    address: USDC_ADDRESS, abi: ERC20_ABI, functionName: 'allowance',
     args: [address ?? '0x0000000000000000000000000000000000000000', CONTRACT_ADDRESS],
     query: { enabled: !!canRead && !!address },
   });
 
-  // === Derived ===
+  // Derived
   const minted = totalSupply ?? 0n;
   const max = maxSupply ?? 333n;
   const percent = useMemo(() => {
     if (max === 0n) return 0;
-    const p = Number((minted * 100n) / max);
-    return Math.min(100, Math.max(0, p));
+    return Math.min(100, Math.max(0, Number((minted * 100n) / max)));
   }, [minted, max]);
 
   const requiredAmount: bigint = useMemo(() => (priceUSDC ?? 0n) * BigInt(qty), [priceUSDC, qty]);
@@ -129,30 +107,43 @@ export default function Home() {
     return null;
   }, [mounted, isConnected, chainId, saleActive, remaining, qty, walletOverLimit]);
 
-  // === Writes ===
+  // Writes
   const { writeContract: write, data: txHash, isPending } = useWriteContract();
-  const { isLoading: isConfirming } = useWaitForTransactionReceipt({ hash: txHash });
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
 
   const approve = async () => {
     if (!requiredAmount) return;
     write({
-      chainId: base.id,
-      address: USDC_ADDRESS,
-      abi: ERC20_ABI,
-      functionName: 'approve',
-      args: [CONTRACT_ADDRESS, requiredAmount],
+      chainId: base.id, address: USDC_ADDRESS, abi: ERC20_ABI,
+      functionName: 'approve', args: [CONTRACT_ADDRESS, requiredAmount],
     });
   };
 
   const mint = async () => {
     write({
-      chainId: base.id,
-      address: CONTRACT_ADDRESS,
-      abi: COLLECTION_ABI,
-      functionName: 'mint',
-      args: [BigInt(qty)],
+      chainId: base.id, address: CONTRACT_ADDRESS, abi: COLLECTION_ABI,
+      functionName: 'mint', args: [BigInt(qty)],
     });
   };
+
+  // ✅ بعد نجاح السك: أرسل حدثًا لـNeynar عبر API Route
+  useEffect(() => {
+    if (!isSuccess || !txHash || !address) return;
+    const send = async () => {
+      try {
+        await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            type: 'mint', qty, address, tx: txHash, contract: CONTRACT_ADDRESS,
+          }),
+        });
+      } catch (e) {
+        console.error('Notify failed', e);
+      }
+    };
+    send();
+  }, [isSuccess, txHash, address, qty]);
 
   // Share → Warpcast composer
   const share = () => {
@@ -164,11 +155,9 @@ export default function Home() {
     window.open(u.toString(), '_blank');
   };
 
-  // UI helpers
   const fmt = (v?: bigint) => (v === undefined ? '—' : formatUnits(v, USDC_DECIMALS));
   const disabledMint = !!guardReason || !hasEnoughAllowance || isPending || isConfirming;
   const disabledApprove = !!guardReason || hasEnoughAllowance || isPending || isConfirming;
-
   useEffect(() => {
     if (remaining !== undefined) {
       const maxByRemaining = Number(remaining > BigInt(MAX_QTY_UI) ? MAX_QTY_UI : remaining);
@@ -177,7 +166,7 @@ export default function Home() {
   }, [remaining]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const mintedOfMeText =
-    mounted && mintedOfMe !== undefined ? (mintedOfMe as bigint).toString() : '—'; // ✅ لا نعرض 0 قبل mount
+    mounted && mintedOfMe !== undefined ? (mintedOfMe as bigint).toString() : '—';
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white">
@@ -191,15 +180,9 @@ export default function Home() {
         <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-6 flex items-center gap-6">
           <ProgressRing percent={percent} label={`${minted.toString()}/${max.toString()} Minted`} />
           <div className="space-y-1">
-            <div className="text-sm text-neutral-300">
-              <span className="font-medium">Max 5</span> per wallet
-            </div>
-            <div className="text-sm text-neutral-300">
-              You minted: <span className="font-mono text-white">{mintedOfMeText}</span>
-            </div>
-            <div className="text-sm text-neutral-300">
-              Price: <span className="font-mono text-white">{fmt(priceUSDC as bigint)}</span> USDC
-            </div>
+            <div className="text-sm text-neutral-300"><span className="font-medium">Max 5</span> per wallet</div>
+            <div className="text-sm text-neutral-300">You minted: <span className="font-mono text-white">{mintedOfMeText}</span></div>
+            <div className="text-sm text-neutral-300">Price: <span className="font-mono text-white">{fmt(priceUSDC as bigint)}</span> USDC</div>
           </div>
         </div>
 
@@ -208,58 +191,29 @@ export default function Home() {
           <h2 className="text-xl font-bold mb-4">Mint</h2>
           <div className="flex items-center gap-3">
             <label className="text-sm text-neutral-300">Quantity</label>
-            <input
-              type="number"
-              min={1}
-              max={MAX_QTY_UI}
-              value={qty}
-              onChange={(e) =>
-                setQty(Math.min(MAX_QTY_UI, Math.max(1, Number(e.target.value || 1))))
-              }
-              className="w-20 bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 outline-none"
-            />
-            <div className="ml-auto text-sm text-neutral-400">
-              Cost: <span className="text-white font-mono">{fmt(requiredAmount)}</span> USDC
-            </div>
+            <input type="number" min={1} max={MAX_QTY_UI} value={qty}
+              onChange={(e) => setQty(Math.min(MAX_QTY_UI, Math.max(1, Number(e.target.value || 1))))}
+              className="w-20 bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 outline-none" />
+            <div className="ml-auto text-sm text-neutral-400">Cost: <span className="text-white font-mono">{fmt(requiredAmount)}</span> USDC</div>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-3">
-            <button
-              onClick={approve}
-              disabled={disabledApprove}
-              className={`px-4 py-2 rounded-lg border ${
-                disabledApprove ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'
-              } border-cyan-300/30 bg-cyan-300/20`}
-            >
+            <button onClick={approve} disabled={disabledApprove}
+              className={`px-4 py-2 rounded-lg border ${disabledApprove ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'} border-cyan-300/30 bg-cyan-300/20`}>
               {isPending ? 'Pending…' : 'Approve USDC'}
             </button>
-            <button
-              onClick={mint}
-              disabled={disabledMint}
-              className={`px-4 py-2 rounded-lg border ${
-                disabledMint ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'
-              } border-emerald-300/30 bg-emerald-300/20`}
-            >
+            <button onClick={mint} disabled={disabledMint}
+              className={`px-4 py-2 rounded-lg border ${disabledMint ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'} border-emerald-300/30 bg-emerald-300/20`}>
               {isConfirming ? 'Confirming…' : 'Mint'}
             </button>
           </div>
 
-          {/* زر Share أسفل قسم Mint */}
           <div className="mt-6">
-            <button
-              onClick={share}
-              className="w-full rounded-lg border border-cyan-300/30 bg-cyan-300/20 px-4 py-2 text-sm hover:opacity-90"
-            >
+            <button onClick={share}
+              className="w-full rounded-lg border border-cyan-300/30 bg-cyan-300/20 px-4 py-2 text-sm hover:opacity-90">
               Share on Warpcast
             </button>
           </div>
-
-          {!hasEnoughAllowance && !guardReason && (
-            <p className="mt-3 text-sm text-neutral-300">
-              You need to approve <span className="font-mono">{fmt(requiredAmount)}</span> USDC
-              before minting.
-            </p>
-          )}
         </div>
       </section>
     </main>
@@ -267,40 +221,17 @@ export default function Home() {
 }
 
 function ProgressRing({ percent, label }: { percent: number; label: string }) {
-  const size = 112;
-  const stroke = 10;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
+  const size = 112, stroke = 10;
+  const r = (size - stroke) / 2, c = 2 * Math.PI * r;
   const dash = (percent / 100) * c;
-
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          stroke="currentColor"
-          strokeWidth={stroke}
-          className="text-neutral-800"
-          fill="none"
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          stroke="currentColor"
-          strokeWidth={stroke}
-          className="text-cyan-300"
-          fill="none"
-          strokeDasharray={`${dash} ${c - dash}`}
-          strokeLinecap="round"
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
+        <circle cx={size/2} cy={size/2} r={r} stroke="currentColor" strokeWidth={stroke} className="text-neutral-800" fill="none"/>
+        <circle cx={size/2} cy={size/2} r={r} stroke="currentColor" strokeWidth={stroke} className="text-cyan-300" fill="none"
+          strokeDasharray={`${dash} ${c - dash}`} strokeLinecap="round" transform={`rotate(-90 ${size/2} ${size/2})`} />
       </svg>
-      <div className="absolute inset-0 grid place-items-center text-sm font-medium">
-        {label}
-      </div>
+      <div className="absolute inset-0 grid place-items-center text-sm font-medium">{label}</div>
     </div>
   );
 }

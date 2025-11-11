@@ -1,0 +1,14 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/my-nfts/layout,_N_T_/my-nfts/page,_N_T_/my-nfts"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/my-nfts/__PAGE__",
+    "/my-nfts",
+    "/_index"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/WinDows/Desktop/Web3-Projects/quantum-mints-mini/src/app/page.tsx"],"sourcesContent":["// src/app/page.tsx\n'use client';\nimport { ConnectButton } from '@rainbow-me/rainbowkit';\n\nexport default function Home() {\n  return (\n    <main className=\"min-h-screen flex items-center justify-center bg-neutral-950 text-white\">\n      <div className=\"bg-neutral-900/70 border border-neutral-800 p-6 rounded-2xl\">\n        <h1 className=\"text-2xl font-bold mb-4\">Quantum Mints — Dev Preview</h1>\n        <ConnectButton />\n        <p className=\"mt-4 text-sm text-neutral-400\">Chain: Base (8453)</p>\n      </div>\n    </main>\n  );\n}\n"],"names":[],"mappings":"AAAA,mBAAmB;;;;;;AAEnB;AADA;;;AAGe,SAAS;IACtB,qBACE,ySAAC;QAAK,WAAU;kBACd,cAAA,ySAAC;YAAI,WAAU;;8BACb,ySAAC;oBAAG,WAAU;8BAA0B;;;;;;8BACxC,ySAAC,0PAAa;;;;;8BACd,ySAAC;oBAAE,WAAU;8BAAgC;;;;;;;;;;;;;;;;;AAIrD","debugId":null}}]
+}

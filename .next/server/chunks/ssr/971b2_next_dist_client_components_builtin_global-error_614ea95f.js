@@ -1,0 +1,3 @@
+module.exports=[823705,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(984685);a.n(d("[project]/Desktop/Web3-Projects/quantum-mints-mini/node_modules/next/dist/client/components/builtin/global-error.js <module evaluation>"))},524915,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(984685);a.n(d("[project]/Desktop/Web3-Projects/quantum-mints-mini/node_modules/next/dist/client/components/builtin/global-error.js"))},861934,a=>{"use strict";a.i(823705);var b=a.i(524915);a.n(b)}];
+
+//# sourceMappingURL=971b2_next_dist_client_components_builtin_global-error_614ea95f.js.map

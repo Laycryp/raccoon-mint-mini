@@ -1,0 +1,11 @@
+var R=require("../../chunks/ssr/[turbopack]_runtime.js")("server/app/_global-error/page.js")
+R.c("server/chunks/ssr/[root-of-the-server]__8a6bbd11._.js")
+R.c("server/chunks/ssr/Desktop_Web3-Projects_quantum-mints-mini_e0233274._.js")
+R.c("server/chunks/ssr/971b2_next_dist_f8d8f617._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__be3165ef._.js")
+R.c("server/chunks/ssr/971b2_c5d9ae29._.js")
+R.c("server/chunks/ssr/971b2_next_dist_06548759._.js")
+R.c("server/chunks/ssr/Desktop_Web3-Projects_quantum-mints-mini_src_app_855b5c5c._.js")
+R.c("server/chunks/ssr/5e145__next-internal_server_app__global-error_page_actions_16770aff.js")
+R.m(665114)
+module.exports=R.m(665114).exports

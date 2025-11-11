@@ -1,0 +1,18 @@
+{
+  "accountAssociation": {
+    "header": "<generated-header>",
+    "payload": "<generated-payload>",
+    "signature": "<generated-signature>"
+  },
+  "miniapp": {
+    "version": "1",
+    "name": "Quantum Mints",
+    "description": "Mint 333 NFTs on Base using USDC.",
+    "iconUrl": "https://YOUR_DOMAIN/icon.png",
+    "homeUrl": "https://clara-ralph-campbell-penalties.trycloudflare.com",
+    "canonicalDomain": "YOUR_DOMAIN",
+    "requiredChains": ["eip155:8453"],
+    "tags": ["mint", "base", "usdc"],
+    "requiredCapabilities": ["actions.ready", "actions.signIn"]
+  }
+}

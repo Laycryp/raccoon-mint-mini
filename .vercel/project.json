@@ -1,1 +1,16 @@
-{"projectId":"prj_kVMLnp08l22n6MUhXIbJLLKfSRfK","orgId":"team_RCj2n1YFzbi3SAN7ljBUfHlz","projectName":"quantum-mints-mini"}
+{
+  "projectId": "prj_kVMLnp08l22n6MUhXIbJLLKfSRfK",
+  "orgId": "team_RCj2n1YFzbi3SAN7ljBUfHlz",
+  "projectName": "quantum-mints-mini",
+  "settings": {
+    "createdAt": 1762896889819,
+    "framework": "nextjs",
+    "devCommand": null,
+    "installCommand": null,
+    "buildCommand": null,
+    "outputDirectory": null,
+    "rootDirectory": null,
+    "directoryListing": false,
+    "nodeVersion": "22.x"
+  }
+}

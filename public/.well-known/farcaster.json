@@ -1,25 +1,35 @@
 {
-  "version": "1.0.0",
-  "name": "RACCOON-MINT",
-  "description": "Mint Raccoon NFTs on Base for 0.1 USDC",
-  "primaryCategory": "finance",
-
-  "appUrl": "https://quantum-mints-mini.vercel.app",
-  "homeUrl": "https://quantum-mints-mini.vercel.app",
-  "iconUrl": "https://quantum-mints-mini.vercel.app/icon.png",
-  "splashImageUrl": "https://quantum-mints-mini.vercel.app/splash.png",
-
-  "webhookUrl": "https://api.neynar.com/f/app/ac9a59a9-fec9-4c1e-8cdf-a81a853db0e3/event",
-
-  "openGraph": {
-    "imageUrl": "https://quantum-mints-mini.vercel.app/og.png",
-    "title": "RACCOON-MINT 0.1 USDC on Base",
-    "description": "Max 5 per wallet. Live now."
-  },
-
   "accountAssociation": {
     "header": "eyJmaWQiOjI1NjAxNCwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDU1OGY4OGZGYzU0Y0I5RjQ0QmExN2FmNDU5RDI2YzM3NTRmNEU3ZTYifQ",
     "payload": "eyJkb21haW4iOiJxdWFudHVtLW1pbnRzLW1pbmkudmVyY2VsLmFwcCJ9",
     "signature": "bDSivjgNhkLjwuV7BOQun8GYpszVdMQneNF7+T+6AqgZEZ8ITAb00zt4c29sPYFwLjh7tsMv1y4bKUTob8mqdhs="
+  },
+
+  "baseBuilder": {
+    "ownerAddress": "0xE7668146CDC2326bb1a2Db36201ac71d8e9A1233"
+  },
+
+  "miniapp": {
+    "version": "1",
+    "name": "RACCOON-MINT",
+
+    "appUrl": "https://quantum-mints-mini.vercel.app",
+    "homeUrl": "https://quantum-mints-mini.vercel.app",
+
+    "iconUrl": "https://quantum-mints-mini.vercel.app/icon.png",
+    "splashImageUrl": "https://quantum-mints-mini.vercel.app/splash.png",
+    "splashBackgroundColor": "#060A18",
+
+    "subtitle": "Mint a Raccoon on Base",
+    "description": "mint raccoon nfts on base for fun",
+    "primaryCategory": "finance",
+    "tags": ["nft", "mint", "base", "raccoon", "trade"],
+
+    "imageUrl": "https://quantum-mints-mini.vercel.app/og.png",
+    "ogTitle": "RACCOON-MINT",
+    "ogDescription": "Mint on Base",
+
+    "webhookUrl": "https://api.neynar.com/f/app/ac9a59a9-fec9-4c1e-8cdf-a81a853db0e3/event",
+    "noindex": true
   }
 }

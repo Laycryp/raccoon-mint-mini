@@ -1,177 +1,154 @@
+// src/app/my-nfts/page.tsx
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useAccount, usePublicClient } from 'wagmi';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useEffect, useState } from 'react';
 import { sdk } from '@farcaster/miniapp-sdk';
+import { useAccount } from 'wagmi';
+import { base } from 'wagmi/chains';
+import { createPublicClient, http } from 'viem';
 import { CONTRACT_ADDRESS } from '@/lib/constants';
-import { ipfsToHttp } from '@/lib/ipfs';
-import { ERC721_ENUMERABLE_METADATA_ABI } from '@/lib/abi/erc721';
 
-type Item = {
-  tokenId: bigint;
-  name?: string;
-  imageUrl?: string;
-  metaUrl: string;
-  error?: string;
-};
+// Minimal ERC721 ABI for direct viem reads
+const ERC721_MIN = [
+  { type: 'function', name: 'balanceOf', stateMutability: 'view', inputs: [{ name: 'owner', type: 'address' }], outputs: [{ type: 'uint256' }] },
+  { type: 'function', name: 'tokenOfOwnerByIndex', stateMutability: 'view', inputs: [{ name: 'owner', type: 'address' }, { name: 'index', type: 'uint256' }], outputs: [{ type: 'uint256' }] },
+  { type: 'function', name: 'tokenURI', stateMutability: 'view', inputs: [{ name: 'tokenId', type: 'uint256' }], outputs: [{ type: 'string' }] },
+] as const;
+
+type Item = { tokenId: bigint; image?: string; name?: string };
 
 export default function MyNftsPage() {
   const { address, isConnected } = useAccount();
-  const publicClient = usePublicClient();
-  const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
-  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
+  useEffect(() => setMounted(true), []);
+
+  // Farcaster ready (unconditional)
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    const sameOrigin = !appUrl || window.location.origin === appUrl;
-    if (sameOrigin) sdk.actions.ready().catch(console.error);
+    const t = setTimeout(() => {
+      try { sdk.actions.ready(); } catch (e) { console.error(e); }
+    }, 0);
+    return () => clearTimeout(t);
   }, []);
 
-  const loadOwned = async () => {
-    if (!isConnected || !address || !publicClient) return;
-    setLoading(true);
-    setErr(null);
-    try {
-      const balance = (await publicClient.readContract({
-        address: CONTRACT_ADDRESS,
-        abi: ERC721_ENUMERABLE_METADATA_ABI,
-        functionName: 'balanceOf',
-        args: [address],
-      })) as bigint;
-
-      if (balance === 0n) {
+  useEffect(() => {
+    const run = async () => {
+      if (!mounted || !isConnected || !address) {
         setItems([]);
-        setLoading(false);
         return;
       }
+      setLoading(true);
+      setItems([]);
+      try {
+        const rpc = process.env.NEXT_PUBLIC_BASE_RPC;
+        const client = createPublicClient({ chain: base, transport: http(rpc) });
 
-      const calls = Array.from({ length: Number(balance) }, (_, i) => ({
-        address: CONTRACT_ADDRESS,
-        abi: ERC721_ENUMERABLE_METADATA_ABI,
-        functionName: 'tokenOfOwnerByIndex' as const,
-        args: [address, BigInt(i)],
-      }));
-      const tokenIds = (await publicClient.multicall({ contracts: calls })).map(
-        (r) => r.result as bigint
-      );
+        // balanceOf
+        const balance = (await client.readContract({
+          address: CONTRACT_ADDRESS,
+          abi: ERC721_MIN,
+          functionName: 'balanceOf',
+          args: [address as `0x${string}`],
+        })) as bigint;
 
-      const uriCalls = tokenIds.map((tid) => ({
-        address: CONTRACT_ADDRESS,
-        abi: ERC721_ENUMERABLE_METADATA_ABI,
-        functionName: 'tokenURI' as const,
-        args: [tid],
-      }));
-      const uris = (await publicClient.multicall({ contracts: uriCalls })).map(
-        (r) => r.result as string
-      );
+        if (balance === 0n) {
+          setItems([]);
+          return;
+        }
 
-      const meta: Item[] = await Promise.all(
-        tokenIds.map(async (tid, i) => {
-          const tokenUri = uris[i];
-          const url = ipfsToHttp(tokenUri);
+        // loop tokens
+        for (let i = 0n; i < balance; i++) {
+          const tokenId = (await client.readContract({
+            address: CONTRACT_ADDRESS,
+            abi: ERC721_MIN,
+            functionName: 'tokenOfOwnerByIndex',
+            args: [address as `0x${string}`, i],
+          })) as bigint;
+
+          const uri = (await client.readContract({
+            address: CONTRACT_ADDRESS,
+            abi: ERC721_MIN,
+            functionName: 'tokenURI',
+            args: [tokenId],
+          })) as string;
+
+          const httpUri = uri.startsWith('ipfs://')
+            ? uri.replace('ipfs://', 'https://ipfs.io/ipfs/')
+            : uri;
+
           try {
-            const res = await fetch(url, { cache: 'no-store' });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const json = await res.json();
-            const img = ipfsToHttp(json.image || json.image_url || '');
-            return { tokenId: tid, name: json.name, imageUrl: img, metaUrl: url };
-          } catch (e: any) {
-            return { tokenId: tid, metaUrl: url, error: e?.message || String(e) };
+            const meta = await fetch(httpUri, { cache: 'no-store' }).then((r) => r.json());
+            const img =
+              typeof meta.image === 'string'
+                ? meta.image.startsWith('ipfs://')
+                  ? meta.image.replace('ipfs://', 'https://ipfs.io/ipfs/')
+                  : meta.image
+                : undefined;
+
+            setItems((prev) => [...prev, { tokenId, image: img, name: meta.name }]);
+          } catch {
+            setItems((prev) => [...prev, { tokenId }]);
           }
-        })
-      );
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    run();
+  }, [mounted, isConnected, address]);
 
-      setItems(meta);
-    } catch (e: any) {
-      setErr(e?.message || String(e));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadOwned();
-  }, [isConnected, address]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const ownedCount = useMemo(() => items.length.toString(), [items]);
+  const openSeaLink = (id: bigint) =>
+    `https://opensea.io/assets/base/${CONTRACT_ADDRESS}/${id.toString()}`;
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white">
       <header className="flex items-center justify-between p-4 border-b border-neutral-800">
-        <div className="text-lg font-semibold">RACCOON-MINT — My NFT</div>
-        <ConnectButton />
+        <div className="text-lg font-semibold">My NFT</div>
       </header>
 
-      <section className="max-w-3xl mx-auto p-6 grid gap-6">
-        <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold">Your Minted NFTs</h2>
-            <button
-              onClick={loadOwned}
-              className="text-sm rounded-lg border border-neutral-700 px-3 py-1 hover:bg-neutral-800"
-              disabled={loading}
-            >
-              {loading ? 'Refreshing…' : 'Refresh'}
-            </button>
+      <section className="max-w-3xl mx-auto p-6">
+        {!isConnected ? (
+          <p className="text-neutral-300">Connect your wallet to view your NFTs.</p>
+        ) : loading ? (
+          <p className="text-neutral-300">Loading…</p>
+        ) : items.length === 0 ? (
+          <p className="text-neutral-300">No NFTs found.</p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {items.map((it) => (
+              <div
+                key={it.tokenId.toString()}
+                className="rounded-xl border border-neutral-800 bg-neutral-900/60 overflow-hidden"
+              >
+                <div className="aspect-square grid place-items-center bg-neutral-900">
+                  {it.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={it.image}
+                      alt={it.name ?? `#${it.tokenId.toString()}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-neutral-400 text-sm">No image</div>
+                  )}
+                </div>
+                <div className="p-3 flex items-center justify-between">
+                  <div className="text-sm">{it.name ?? `#${it.tokenId.toString()}`}</div>
+                  <a
+                    href={openSeaLink(it.tokenId)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs px-2 py-1 rounded border border-cyan-300/30 bg-cyan-300/20 hover:opacity-90"
+                  >
+                    View on OpenSea
+                  </a>
+                </div>
+              </div>
+            ))}
           </div>
-          {!isConnected ? (
-            <p className="mt-2 text-sm text-neutral-300">Connect your wallet to see your NFTs.</p>
-          ) : (
-            <p className="mt-2 text-sm text-neutral-300">
-              Owned now: <span className="font-mono text-white">{ownedCount}</span>
-            </p>
-          )}
-          {err && <p className="mt-2 text-amber-300 text-sm">⚠️ Error: {err}</p>}
-        </div>
-
-        <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
-          {loading ? (
-            <p className="text-sm text-neutral-300">Loading your NFTs…</p>
-          ) : items.length === 0 ? (
-            <p className="text-sm text-neutral-300">
-              {isConnected ? 'No NFTs owned at the moment.' : 'Connect wallet to view.'}
-            </p>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {items.map((it) => (
-                <article
-                  key={it.tokenId.toString()}
-                  className="rounded-xl overflow-hidden border border-neutral-800 bg-neutral-900"
-                >
-                  <div className="aspect-square bg-neutral-800 flex items-center justify-center">
-                    {it.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={it.imageUrl}
-                        alt={it.name ?? `#${it.tokenId.toString()}`}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-xs text-neutral-400 p-2 text-center">
-                        {it.error ? it.error : 'No image'}
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-3 text-sm">
-                    <div className="font-mono">#{it.tokenId.toString()}</div>
-                    {it.name && <div className="text-neutral-300">{it.name}</div>}
-                    <a
-                      className="inline-block mt-1 text-cyan-300 text-xs hover:underline"
-                      href={`https://opensea.io/assets/base/${CONTRACT_ADDRESS}/${it.tokenId.toString()}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Open in OpenSea →
-                    </a>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </div>
+        )}
       </section>
     </main>
   );

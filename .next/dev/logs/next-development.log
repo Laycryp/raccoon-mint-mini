@@ -57,3 +57,10 @@ It can also happen if the client has a browser extension installed which messes 
 [00:03:13.089] Server  LOG      ○ Compiling /my-nfts ...
 [00:03:14.662] Browser ERROR   unhandledRejection: Error: The source http://localhost:3000/ has not been authorized yet
 [00:05:18.148] Server  LOG      ✓ Compiled in 240ms
+[00:08:05.673] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:08:05.818] Browser LOG     [RACCOON-MINT] Using RPC: https://base-mainnet.g.alchemy.com/v2/-ZMTAbXNoqjsjK8lrt1US
+[00:08:15.336] Browser ERROR   unhandledRejection: Error: The source http://localhost:3000/ has not been authorized yet
+[00:20:28.836] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:20:28.987] Browser LOG     [RACCOON-MINT] Using RPC: https://base-mainnet.g.alchemy.com/v2/-ZMTAbXNoqjsjK8lrt1US
+[00:20:38.728] Browser ERROR   unhandledRejection: Error: The source http://localhost:3000/ has not been authorized yet
+[00:45:31.035] Server  LOG      ✓ Compiled in 2.7s

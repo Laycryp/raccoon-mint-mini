@@ -257,12 +257,21 @@ function Home() {
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$Web3$2d$Projects$2f$quantum$2d$mints$2d$mini$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "Home.useEffect": ()=>setMounted(true)
     }["Home.useEffect"], []);
-    // Farcaster ready
+    // ✅ Farcaster ready (غير مشروط بعد mount)
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$Web3$2d$Projects$2f$quantum$2d$mints$2d$mini$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "Home.useEffect": ()=>{
-            const appUrl = ("TURBOPACK compile-time value", "https://clara-ralph-campbell-penalties.trycloudflare.com");
-            const sameOrigin = ("TURBOPACK compile-time value", "object") !== 'undefined' && (!appUrl || window.location.origin === appUrl);
-            if (sameOrigin) __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$Web3$2d$Projects$2f$quantum$2d$mints$2d$mini$2f$node_modules$2f40$farcaster$2f$miniapp$2d$sdk$2f$dist$2f$sdk$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["sdk"].actions.ready().catch(console.error);
+            const t = setTimeout({
+                "Home.useEffect.t": ()=>{
+                    try {
+                        __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$Web3$2d$Projects$2f$quantum$2d$mints$2d$mini$2f$node_modules$2f40$farcaster$2f$miniapp$2d$sdk$2f$dist$2f$sdk$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["sdk"].actions.ready();
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+            }["Home.useEffect.t"], 0);
+            return ({
+                "Home.useEffect": ()=>clearTimeout(t)
+            })["Home.useEffect"];
         }
     }["Home.useEffect"], []);
     // ==== Reads العامة (تعمل بدون اتصال) ====
@@ -419,7 +428,6 @@ function Home() {
             ]
         });
     // ==== قفل الترطيب (Hydration Lock) ====
-    // نجبر أول رندر أن يكون الأزرار "مقفلة" وبنفس الـclass حتى تكتمل الـhydration.
     const HYDRATE_LOCK = !mounted;
     const uiDisabledApprove = HYDRATE_LOCK ? true : !!guardReason || !isConnected || hasEnoughAllowance || isPending || isConfirming;
     const uiDisabledMint = HYDRATE_LOCK ? true : !!guardReason || !isConnected || !hasEnoughAllowance || isPending || isConfirming;

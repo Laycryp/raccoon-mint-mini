@@ -1,55 +1,32 @@
 'use client';
 
-import '@rainbow-me/rainbowkit/styles.css';
-import { ReactNode, useMemo } from 'react';
-import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
-import { WagmiProvider, createConfig } from 'wagmi';
+import { ReactNode } from 'react';
+import { WagmiProvider, createConfig, http } from 'wagmi';
 import { base } from 'wagmi/chains';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { http } from 'viem';
 import { injected } from 'wagmi/connectors';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
+import '@rainbow-me/rainbowkit/styles.css';
 
-// ⛳️ نقرأ من ENV مع Fallback تلقائي
-const ENV_RPC = process.env.NEXT_PUBLIC_BASE_RPC;
-const ACTIVE_RPC = ENV_RPC && ENV_RPC.length > 0
-  ? ENV_RPC
-  : 'https://rpc.ankr.com/base';
-
-if (typeof window !== 'undefined') {
-  console.log('[RACCOON-MINT] Using RPC:', ACTIVE_RPC);
-}
+const rpc = process.env.NEXT_PUBLIC_BASE_RPC || 'https://mainnet.base.org';
 
 const config = createConfig({
   chains: [base],
+  ssr: true,
   transports: {
-    [base.id]: http(ACTIVE_RPC, {
-      fetchOptions: { cache: 'no-store' },
-      timeout: 20_000,
-      batch: true,
-      retryCount: 1,
-    }),
+    [base.id]: http(rpc, { batch: true }),
   },
+  // ✅ Injected فقط (MetaMask, Coinbase Extension, Brave…)
   connectors: [injected()],
-  ssr: false, // نُبقيها متعطّلة لتفادي فروقات الخادم/المتصفح
 });
 
-type Props = { children: ReactNode };
+const queryClient = new QueryClient();
 
-export default function Providers({ children }: Props) {
-  const queryClient = useMemo(() => new QueryClient(), []);
+export default function Providers({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider
-          theme={darkTheme({
-            accentColor: '#67e8f9',
-            accentColorForeground: '#0b1220',
-            borderRadius: 'large',
-          })}
-          coolMode
-        >
-          {children}
-        </RainbowKitProvider>
+        <RainbowKitProvider>{children}</RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );

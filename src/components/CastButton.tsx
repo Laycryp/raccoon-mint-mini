@@ -1,9 +1,10 @@
 'use client';
 import { sdk } from '@farcaster/miniapp-sdk';
+import { MINIAPP_URL } from '@/lib/miniapp';
 
 const TEXT =
   'i just Mint  my RACCOON, take your Raccoon on Base Max 5/wallet';
-const LINK = 'https://farcaster.xyz/miniapps/_5-bazKk7UUJ/raccoon-mint';
+const LINK = MINIAPP_URL;
 
 export default function CastButton() {
   const onCast = async () => {

@@ -21,6 +21,7 @@ import {
   USDC_DECIMALS,
   MAX_QTY_UI,
 } from '@/lib/constants';
+import { MINIAPP_URL } from '@/lib/miniapp';
 import CastButton from '@/components/CastButton';
 
 export default function Home() {
@@ -170,8 +171,7 @@ export default function Home() {
   const openCastComposer = async () => {
     const TEXT =
       'i just Mint  my RACCOON, take your Raccoon on Base Max 5/wallet';
-    const LINK =
-      'https://farcaster.xyz/miniapps/_5-bazKk7UUJ/raccoon-mint';
+    const LINK = MINIAPP_URL;
     try {
       // @ts-ignore
       if (sdk?.actions?.composeCast) {

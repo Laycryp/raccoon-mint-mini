@@ -5,9 +5,9 @@ const securityHeaders = [
   {
     key: 'Content-Security-Policy',
     value:
-      "frame-ancestors 'self' https://warpcast.com https://*.warpcast.com https://farcaster.xyz https://*.farcaster.xyz https://base.org https://*.base.org;",
+      "frame-ancestors 'self' https://app.base.org https://*.base.org https://warpcast.com https://*.warpcast.com https://farcaster.xyz https://*.farcaster.xyz;",
   },
-  // أبقِ X-Frame-Options غير موجودة (لا تضفها إطلاقًا)
+  // اترك X-Frame-Options غير مُضافة إطلاقًا
   { key: 'X-Content-Type-Options', value: 'nosniff' },
 ];
 
